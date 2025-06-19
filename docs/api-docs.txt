@@ -1,0 +1,3 @@
+API Endpoints:
+- POST /login
+- GET /products (Auth Required)
