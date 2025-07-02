@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from .database import Base, engine
 from .routers import (
     users,
@@ -17,6 +18,15 @@ app = FastAPI(
     title="GreenBasket API (Advanced)",
     description="BigBasket‑level backend with admin, delivery, payments",
     version="2.0.0",
+)
+
+# Allow the API to be called from browser-based clients
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(auth_router.router)
