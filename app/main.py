@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from .database import Base, engine
+from .routers import seed as seed_router
 
 # ────────── 1️⃣  create the FastAPI app first
 app = FastAPI(
