@@ -118,3 +118,66 @@ class DeliveryAssignment(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+# -------- Additional Schemas --------
+class AddressBase(BaseModel):
+    address_line: str
+    city: str
+    pincode: str
+    label: Optional[str] = None
+    is_default: bool = False
+
+
+class Address(AddressBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+class ReviewBase(BaseModel):
+    rating: int
+    comment: Optional[str] = None
+
+
+class Review(ReviewBase):
+    id: int
+    user_id: int
+    product_id: int
+    created_at: datetime.datetime
+
+    class Config:
+        orm_mode = True
+
+
+class Coupon(BaseModel):
+    id: int
+    code: str
+    discount_percent: int
+    active: bool
+
+    class Config:
+        orm_mode = True
+
+
+class WalletTransaction(BaseModel):
+    id: int
+    user_id: int
+    amount: float
+    description: Optional[str] = None
+    created_at: datetime.datetime
+
+    class Config:
+        orm_mode = True
+
+
+class Notification(BaseModel):
+    id: int
+    user_id: int
+    message: str
+    created_at: datetime.datetime
+    read: bool
+
+    class Config:
+        orm_mode = True

@@ -122,3 +122,60 @@ class DeliveryAssignment(Base):
 
     order = relationship("Order", back_populates="delivery_assignment")
     delivery_partner = relationship("User", back_populates="deliveries")
+
+
+# Additional models for extended BigBasket-style features
+class Address(Base):
+    __tablename__ = "addresses"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    address_line = Column(String, nullable=False)
+    city = Column(String, nullable=False)
+    pincode = Column(String, nullable=False)
+    label = Column(String, nullable=True)
+    is_default = Column(Boolean, default=False)
+
+    user = relationship("User")
+
+
+class Review(Base):
+    __tablename__ = "reviews"
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    rating = Column(Integer, nullable=False)
+    comment = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    product = relationship("Product")
+    user = relationship("User")
+
+
+class Coupon(Base):
+    __tablename__ = "coupons"
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String, unique=True, index=True, nullable=False)
+    discount_percent = Column(Integer, nullable=False)
+    active = Column(Boolean, default=True)
+
+
+class WalletTransaction(Base):
+    __tablename__ = "wallet_transactions"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    amount = Column(Float, nullable=False)
+    description = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User")
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    message = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    read = Column(Boolean, default=False)
+
+    user = relationship("User")

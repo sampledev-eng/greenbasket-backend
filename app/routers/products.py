@@ -21,6 +21,7 @@ def list_products(
     limit: int = 20,
     q: str | None = Query(None, description="Search query"),
     category_id: int | None = Query(None),
+    sort: str | None = Query(None, description="price_asc or price_desc"),
     db: Session = Depends(get_db),
 ):
-    return crud.get_products(db, skip=skip, limit=limit, q=q, category_id=category_id)
+    return crud.get_products(db, skip=skip, limit=limit, q=q, category_id=category_id, sort=sort)
