@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-# >>> correct import path – get_db is usually in dependencies.py
+# ✅ correct relative import
 from ..dependencies import get_db
 
-from ..models import Product  # adjust if your model path differs
+from ..models import Product    # adjust path if your models live elsewhere
+
 router = APIRouter(tags=["dev-tools"])
 
 DEMO_PRODUCTS = [
