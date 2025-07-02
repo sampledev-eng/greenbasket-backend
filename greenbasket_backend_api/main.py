@@ -1,4 +1,4 @@
-from fastapi import Header, HTTPException, FastAPI
+"""from fastapi import Header, HTTPException, FastAPI
 from typing import Optional
 from jose import jwt, JWTError
 from pydantic import BaseModel
@@ -46,3 +46,4 @@ def get_products(authorization: Optional[str] = Header(None)):
         {"name": "Milk", "price": 0.99},
         {"name": "Tomato", "price": 0.5}
     ]
+"""

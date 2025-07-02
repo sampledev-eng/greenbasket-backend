@@ -38,3 +38,10 @@ docker compose up --build
 ---
 
 Generated on 2025-07-02T06:37:29.794496 UTC
+
+
+pip install fastapi uvicorn
+
+pip install -r requirements.txt
+
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
