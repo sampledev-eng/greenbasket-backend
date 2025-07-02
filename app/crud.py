@@ -57,3 +57,17 @@ def update_order_status(db: Session, order: models.Order, status: models.OrderSt
     db.commit()
     db.refresh(order)
     return order
+
+# Wallet helpers
+def get_wallet_balance(db: Session, user_id: int) -> float:
+    """Return the sum of confirmed payment amounts for a user's orders."""
+    stmt = (
+        select(models.Payment.amount)
+        .join(models.Order, models.Payment.order_id == models.Order.id)
+        .where(
+            models.Order.user_id == user_id,
+            models.Payment.status == models.PaymentStatus.confirmed,
+        )
+    )
+    amounts = db.execute(stmt).scalars().all()
+    return sum(amounts)
