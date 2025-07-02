@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 
 # ✅ correct relative import
 from ..dependencies import get_db
-from ..database import get_db   # ✅ correct relative path
 
 
 from ..models import Product    # adjust path if your models live elsewhere
