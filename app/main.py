@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from .database import Base, engine
 
 # 1️⃣  create FastAPI app first
@@ -6,6 +7,14 @@ app = FastAPI(
     title="GreenBasket API (Advanced)",
     description="BigBasket-level backend with admin, delivery, payments",
     version="2.0.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://sampledev-eng.github.io"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # 2️⃣  create DB tables
