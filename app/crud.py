@@ -3,12 +3,15 @@ from sqlalchemy import select, update
 from typing import List, Optional
 import datetime
 
-from . import models, schemas
+from . import models, schemas, sms
 from .auth import get_password_hash
+from .email_utils import send_email
+
 
 # User CRUD
 def get_user_by_email(db: Session, email: str):
     return db.query(models.User).filter(models.User.email == email).first()
+
 
 def create_user(db: Session, user: schemas.UserCreate):
     hashed_password = get_password_hash(user.password)
@@ -22,6 +25,7 @@ def create_user(db: Session, user: schemas.UserCreate):
     db.refresh(db_user)
     return db_user
 
+
 # Category CRUD
 def get_or_create_category(db: Session, name: str):
     category = db.query(models.Category).filter(models.Category.name == name).first()
@@ -34,7 +38,9 @@ def get_or_create_category(db: Session, name: str):
     return category
 
 
-def update_category(db: Session, category: models.Category, data: schemas.CategoryBase) -> models.Category:
+def update_category(
+    db: Session, category: models.Category, data: schemas.CategoryBase
+) -> models.Category:
     """Update a category with the provided data."""
     for field, value in data.dict().items():
         setattr(category, field, value)
@@ -48,6 +54,7 @@ def delete_category(db: Session, category: models.Category) -> None:
     db.delete(category)
     db.commit()
 
+
 # Product CRUD
 def create_product(db: Session, product: schemas.ProductCreate):
     db_product = models.Product(**product.dict())
@@ -55,6 +62,7 @@ def create_product(db: Session, product: schemas.ProductCreate):
     db.commit()
     db.refresh(db_product)
     return db_product
+
 
 def get_products(
     db: Session,
@@ -84,14 +92,34 @@ def get_products(
         query = query.order_by(models.Product.price.desc())
     return query.offset(skip).limit(limit).all()
 
+
 def get_product(db: Session, product_id: int):
     return db.query(models.Product).filter(models.Product.id == product_id).first()
+
 
 # Order CRUD helpers
 def update_order_status(db: Session, order: models.Order, status: models.OrderStatus):
     order.status = status
     db.commit()
     db.refresh(order)
+
+    # Create a notification for the user
+    message = f"Order {order.id} status updated to {status.value}"
+    create_notification(db, order.user_id, message)
+
+    # Notify via SMS and email (best effort)
+    try:
+        sms.get_sms_driver().send_sms("", message)
+    except Exception:
+        pass
+
+    try:
+        user = db.query(models.User).filter(models.User.id == order.user_id).first()
+        if user:
+            send_email(user.email, "Order Update", message)
+    except Exception:
+        pass
+
     return order
 
 
@@ -140,7 +168,9 @@ def delete_address(db: Session, address: models.Address) -> None:
     db.commit()
 
 
-def create_review(db: Session, product_id: int, user_id: int, review: schemas.ReviewBase):
+def create_review(
+    db: Session, product_id: int, user_id: int, review: schemas.ReviewBase
+):
     db_review = models.Review(product_id=product_id, user_id=user_id, **review.dict())
     db.add(db_review)
     db.commit()
@@ -153,7 +183,9 @@ def list_reviews(db: Session, product_id: int):
 
 
 def create_wallet_txn(db: Session, user_id: int, amount: float, description: str = ""):
-    txn = models.WalletTransaction(user_id=user_id, amount=amount, description=description)
+    txn = models.WalletTransaction(
+        user_id=user_id, amount=amount, description=description
+    )
     db.add(txn)
     db.commit()
     db.refresh(txn)
@@ -161,13 +193,24 @@ def create_wallet_txn(db: Session, user_id: int, amount: float, description: str
 
 
 def get_wallet_balance(db: Session, user_id: int) -> float:
-    total = db.query(models.WalletTransaction).filter(models.WalletTransaction.user_id == user_id)
+    total = db.query(models.WalletTransaction).filter(
+        models.WalletTransaction.user_id == user_id
+    )
     return sum(tx.amount for tx in total)
 
 
 def create_notification(db: Session, user_id: int, message: str):
     notif = models.Notification(user_id=user_id, message=message)
     db.add(notif)
+    db.commit()
+    db.refresh(notif)
+    return notif
+
+
+def mark_notification_read(
+    db: Session, notif: models.Notification
+) -> models.Notification:
+    notif.read = True
     db.commit()
     db.refresh(notif)
     return notif
@@ -192,7 +235,10 @@ def delete_cart_item(db: Session, item: models.CartItem) -> None:
 def add_to_wishlist(db: Session, user_id: int, product_id: int) -> models.WishlistItem:
     item = (
         db.query(models.WishlistItem)
-        .filter(models.WishlistItem.user_id == user_id, models.WishlistItem.product_id == product_id)
+        .filter(
+            models.WishlistItem.user_id == user_id,
+            models.WishlistItem.product_id == product_id,
+        )
         .first()
     )
     if item:
@@ -213,11 +259,17 @@ def remove_from_wishlist(db: Session, user_id: int, product_id: int) -> None:
 
 
 def list_wishlist(db: Session, user_id: int) -> List[models.WishlistItem]:
-    return db.query(models.WishlistItem).filter(models.WishlistItem.user_id == user_id).all()
+    return (
+        db.query(models.WishlistItem)
+        .filter(models.WishlistItem.user_id == user_id)
+        .all()
+    )
 
 
 # ---- Auth helpers ----
-def create_refresh_token_record(db: Session, user: models.User, token: str, expires_at: datetime.datetime):
+def create_refresh_token_record(
+    db: Session, user: models.User, token: str, expires_at: datetime.datetime
+):
     db_obj = models.RefreshToken(user_id=user.id, token=token, expires_at=expires_at)
     db.add(db_obj)
     db.commit()
@@ -226,7 +278,9 @@ def create_refresh_token_record(db: Session, user: models.User, token: str, expi
 
 
 def get_refresh_token(db: Session, token: str) -> Optional[models.RefreshToken]:
-    return db.query(models.RefreshToken).filter(models.RefreshToken.token == token).first()
+    return (
+        db.query(models.RefreshToken).filter(models.RefreshToken.token == token).first()
+    )
 
 
 def delete_refresh_token(db: Session, token: str) -> None:
@@ -234,7 +288,9 @@ def delete_refresh_token(db: Session, token: str) -> None:
     db.commit()
 
 
-def create_otp_request(db: Session, phone_number: str, code: str, expires_at: datetime.datetime) -> models.OTPRequest:
+def create_otp_request(
+    db: Session, phone_number: str, code: str, expires_at: datetime.datetime
+) -> models.OTPRequest:
     req = models.OTPRequest(phone_number=phone_number, code=code, expires_at=expires_at)
     db.add(req)
     db.commit()
@@ -259,4 +315,3 @@ def verify_otp_code(db: Session, phone_number: str, code: str) -> bool:
     req.verified = True
     db.commit()
     return True
-
