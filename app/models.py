@@ -65,6 +65,7 @@ class Product(Base):
     discount_pct = Column(Integer, default=0)
     image_url = Column(String)
     stock = Column(Integer, default=0)
+    reserved = Column(Integer, default=0)
     category_id = Column(Integer, ForeignKey("categories.id"))
 
     category = relationship("Category", back_populates="products")

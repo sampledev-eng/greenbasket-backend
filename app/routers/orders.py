@@ -58,7 +58,7 @@ def place_order(
     db.commit()
     db.refresh(order)
 
-    # ── Transfer cart items → order items & update stock ──────────────
+    # ── Transfer cart items → order items & update stock/reserved ────
     for ci in cart_items:
         order_item = models.OrderItem(
             order_id=order.id,
@@ -67,6 +67,7 @@ def place_order(
             price=float(ci.product.price),
         )
         ci.product.stock -= ci.quantity
+        ci.product.reserved -= ci.quantity
         db.add(order_item)
         db.delete(ci)
 

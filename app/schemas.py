@@ -52,6 +52,7 @@ class ProductCreate(ProductBase):
 class Product(ProductBase):
     id: int
     category: Optional[Category] = None
+    reserved: int
 
     class Config:
         orm_mode = True
