@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select, update
 from typing import List, Optional
+import datetime
 
 from . import models, schemas
 from .auth import get_password_hash
@@ -46,6 +47,9 @@ def get_products(
     limit: int = 20,
     q: Optional[str] = None,
     category_id: Optional[int] = None,
+    brand: Optional[str] = None,
+    price_min: Optional[float] = None,
+    price_max: Optional[float] = None,
     sort: Optional[str] = None,
 ):
     query = db.query(models.Product)
@@ -53,6 +57,12 @@ def get_products(
         query = query.filter(models.Product.name.ilike(f"%{q}%"))
     if category_id:
         query = query.filter(models.Product.category_id == category_id)
+    if brand:
+        query = query.filter(models.Product.brand.ilike(f"%{brand}%"))
+    if price_min is not None:
+        query = query.filter(models.Product.price >= price_min)
+    if price_max is not None:
+        query = query.filter(models.Product.price <= price_max)
     if sort == "price_asc":
         query = query.order_by(models.Product.price.asc())
     elif sort == "price_desc":
@@ -96,6 +106,25 @@ def list_addresses(db: Session, user_id: int):
     return db.query(models.Address).filter(models.Address.user_id == user_id).all()
 
 
+def get_address(db: Session, address_id: int) -> Optional[models.Address]:
+    return db.query(models.Address).filter(models.Address.id == address_id).first()
+
+
+def update_address(
+    db: Session, address: models.Address, new_data: schemas.AddressBase
+) -> models.Address:
+    for field, value in new_data.dict().items():
+        setattr(address, field, value)
+    db.commit()
+    db.refresh(address)
+    return address
+
+
+def delete_address(db: Session, address: models.Address) -> None:
+    db.delete(address)
+    db.commit()
+
+
 def create_review(db: Session, product_id: int, user_id: int, review: schemas.ReviewBase):
     db_review = models.Review(product_id=product_id, user_id=user_id, **review.dict())
     db.add(db_review)
@@ -127,3 +156,77 @@ def create_notification(db: Session, user_id: int, message: str):
     db.commit()
     db.refresh(notif)
     return notif
+
+
+# ---- Wishlist helpers ----
+def add_to_wishlist(db: Session, user_id: int, product_id: int) -> models.WishlistItem:
+    item = (
+        db.query(models.WishlistItem)
+        .filter(models.WishlistItem.user_id == user_id, models.WishlistItem.product_id == product_id)
+        .first()
+    )
+    if item:
+        return item
+    item = models.WishlistItem(user_id=user_id, product_id=product_id)
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+def remove_from_wishlist(db: Session, user_id: int, product_id: int) -> None:
+    db.query(models.WishlistItem).filter(
+        models.WishlistItem.user_id == user_id,
+        models.WishlistItem.product_id == product_id,
+    ).delete()
+    db.commit()
+
+
+def list_wishlist(db: Session, user_id: int) -> List[models.WishlistItem]:
+    return db.query(models.WishlistItem).filter(models.WishlistItem.user_id == user_id).all()
+
+
+# ---- Auth helpers ----
+def create_refresh_token_record(db: Session, user: models.User, token: str, expires_at: datetime.datetime):
+    db_obj = models.RefreshToken(user_id=user.id, token=token, expires_at=expires_at)
+    db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
+    return db_obj
+
+
+def get_refresh_token(db: Session, token: str) -> Optional[models.RefreshToken]:
+    return db.query(models.RefreshToken).filter(models.RefreshToken.token == token).first()
+
+
+def delete_refresh_token(db: Session, token: str) -> None:
+    db.query(models.RefreshToken).filter(models.RefreshToken.token == token).delete()
+    db.commit()
+
+
+def create_otp_request(db: Session, phone_number: str, code: str, expires_at: datetime.datetime) -> models.OTPRequest:
+    req = models.OTPRequest(phone_number=phone_number, code=code, expires_at=expires_at)
+    db.add(req)
+    db.commit()
+    db.refresh(req)
+    return req
+
+
+def verify_otp_code(db: Session, phone_number: str, code: str) -> bool:
+    now = datetime.datetime.utcnow()
+    req = (
+        db.query(models.OTPRequest)
+        .filter(
+            models.OTPRequest.phone_number == phone_number,
+            models.OTPRequest.code == code,
+            models.OTPRequest.expires_at > now,
+            models.OTPRequest.verified.is_(False),
+        )
+        .first()
+    )
+    if not req:
+        return False
+    req.verified = True
+    db.commit()
+    return True
+
