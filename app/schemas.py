@@ -150,6 +150,7 @@ class Order(BaseModel):
     total: float
     coupon_id: Optional[int] = None
     status: OrderStatus
+    estimated_delivery: Optional[datetime.datetime] = None
     items: List[OrderItem]
 
     class Config:

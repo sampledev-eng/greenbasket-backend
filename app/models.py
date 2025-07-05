@@ -101,6 +101,7 @@ class Order(Base):
     total = Column(Float, default=0.0)
     coupon_id = Column(Integer, ForeignKey("coupons.id"), nullable=True)
     status = Column(Enum(OrderStatus), default=OrderStatus.pending)
+    estimated_delivery = Column(DateTime, nullable=True)
 
     user = relationship("User", back_populates="orders")
     items = relationship("OrderItem", back_populates="order")

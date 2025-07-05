@@ -42,6 +42,8 @@ def take_order(
     assignment = models.DeliveryAssignment(
         order_id=order.id, delivery_partner_id=current_user.id
     )
+    # Compute and set estimated delivery time (ETA)
+    order.estimated_delivery = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
     db.add(assignment)
     crud.update_order_status(db, order, models.OrderStatus.out_for_delivery)
     db.refresh(assignment)
