@@ -31,7 +31,10 @@ class Category(CategoryBase):
 class ProductBase(BaseModel):
     name: str
     description: Optional[str] = None
+    brand: Optional[str] = None
+    mrp: Optional[float] = None
     price: float
+    discount_pct: int = 0
     image_url: Optional[str] = None
     stock: conint(ge=0)
     category_id: Optional[int] = None
@@ -67,12 +70,50 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+
+class TokenPair(Token):
+    refresh_token: str
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
+class PhoneNumber(BaseModel):
+    phone_number: str
+
+
+class VerifyOTP(BaseModel):
+    phone_number: str
+    code: str
+
+
+class EmailAddress(BaseModel):
+    email: EmailStr
+
+
+class ResetPassword(BaseModel):
+    email: EmailStr
+    code: str
+    new_password: str
+
 # Cart
 class CartItemBase(BaseModel):
     product_id: int
     quantity: conint(gt=0)
 
 class CartItem(CartItemBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+class WishlistItemBase(BaseModel):
+    product_id: int
+
+
+class WishlistItem(WishlistItemBase):
     id: int
 
     class Config:
@@ -178,6 +219,17 @@ class Notification(BaseModel):
     message: str
     created_at: datetime.datetime
     read: bool
+
+    class Config:
+        orm_mode = True
+
+
+class OTPRequest(BaseModel):
+    id: int
+    phone_number: str
+    code: str
+    expires_at: datetime.datetime
+    verified: bool
 
     class Config:
         orm_mode = True

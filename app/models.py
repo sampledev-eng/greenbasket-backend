@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     DateTime,
     Enum,
+    Numeric,
 )
 from sqlalchemy.orm import relationship
 
@@ -41,6 +42,7 @@ class User(Base):
     carts = relationship("CartItem", back_populates="user")
     orders = relationship("Order", back_populates="user")
     deliveries = relationship("DeliveryAssignment", back_populates="delivery_partner")
+    refresh_tokens = relationship("RefreshToken", back_populates="user")
 
 
 class Category(Base):
@@ -55,7 +57,10 @@ class Product(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
     description = Column(String, nullable=True)
-    price = Column(Float, nullable=False)
+    brand = Column(String)
+    mrp = Column(Numeric(10, 2))
+    price = Column(Numeric(10, 2), nullable=False)
+    discount_pct = Column(Integer, default=0)
     image_url = Column(String, nullable=True)
     stock = Column(Integer, default=0)
     category_id = Column(Integer, ForeignKey("categories.id"))
@@ -71,6 +76,16 @@ class CartItem(Base):
     quantity = Column(Integer, default=1)
 
     user = relationship("User", back_populates="carts")
+    product = relationship("Product")
+
+
+class WishlistItem(Base):
+    __tablename__ = "wishlist_items"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    product_id = Column(Integer, ForeignKey("products.id"))
+
+    user = relationship("User")
     product = relationship("Product")
 
 
@@ -179,3 +194,22 @@ class Notification(Base):
     read = Column(Boolean, default=False)
 
     user = relationship("User")
+
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    token = Column(String, unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+
+    user = relationship("User", back_populates="refresh_tokens")
+
+
+class OTPRequest(Base):
+    __tablename__ = "otp_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    phone_number = Column(String, index=True, nullable=False)
+    code = Column(String, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    verified = Column(Boolean, default=False)

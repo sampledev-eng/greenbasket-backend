@@ -29,6 +29,8 @@ from .routers import (          # noqa: E402
     reviews,
     coupons,
     wallet,
+    wishlist,
+    checkout,
     admin_analytics,
     misc,
 )
@@ -50,5 +52,7 @@ app.include_router(notifications.router)
 app.include_router(reviews.router)
 app.include_router(coupons.router)
 app.include_router(wallet.router)
+app.include_router(wishlist.router)
+app.include_router(checkout.router)
 app.include_router(admin_analytics.router)
 app.include_router(misc.router)
