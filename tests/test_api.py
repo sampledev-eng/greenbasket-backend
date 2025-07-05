@@ -198,14 +198,18 @@ def test_full_flow(tokens):
     )
     assert resp.status_code == 200
 
-    # 14. Create notification and fetch it
-    db = database.SessionLocal()
-    create_notification(db, tokens["user_id"], "Order preparing")
-    db.close()
-
+    # 14. Notification auto-created and mark as read
     resp = client.get("/notifications/", headers={"Authorization": tokens["user"]})
     assert resp.status_code == 200
     assert len(resp.json()) == 1
+    notif_id = resp.json()[0]["id"]
+
+    resp = client.patch(
+        f"/notifications/{notif_id}/read",
+        headers={"Authorization": tokens["user"]},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["read"] is True
 
     # 15. Admin analytics endpoint
     resp = client.get("/admin/stats", headers={"Authorization": tokens["admin"]})

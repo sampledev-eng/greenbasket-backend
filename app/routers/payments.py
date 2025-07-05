@@ -27,6 +27,7 @@ def initiate_payment(order_id: int, db: Session = Depends(dependencies.get_db)):
     db.refresh(payment)
     return payment
 
+
 # Simple mock payment confirmation
 @router.post("/{order_id}", response_model=schemas.Payment)
 def confirm_payment(order_id: int, db: Session = Depends(dependencies.get_db)):
@@ -34,7 +35,9 @@ def confirm_payment(order_id: int, db: Session = Depends(dependencies.get_db)):
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     if order.status != models.OrderStatus.pending:
-        raise HTTPException(status_code=400, detail="Payment already processed or order invalid")
+        raise HTTPException(
+            status_code=400, detail="Payment already processed or order invalid"
+        )
 
     payment = models.Payment(
         order_id=order.id,
@@ -43,10 +46,7 @@ def confirm_payment(order_id: int, db: Session = Depends(dependencies.get_db)):
         status=models.PaymentStatus.confirmed,
     )
     db.add(payment)
-    # Update order status
-    order.status = models.OrderStatus.paid
-    db.commit()
+    crud.update_order_status(db, order, models.OrderStatus.paid)
     db.refresh(payment)
     db.refresh(order)
     return payment
-
