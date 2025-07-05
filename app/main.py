@@ -32,6 +32,7 @@ from .routers import (          # noqa: E402
     wishlist,
     checkout,
     admin_analytics,
+    recommendations as recommendations_router,
     misc,
 )
 
@@ -55,4 +56,5 @@ app.include_router(wallet.router)
 app.include_router(wishlist.router)
 app.include_router(checkout.router)
 app.include_router(admin_analytics.router)
+app.include_router(recommendations_router.router)
 app.include_router(misc.router)
