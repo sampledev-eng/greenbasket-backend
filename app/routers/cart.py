@@ -15,8 +15,9 @@ def add_to_cart(
     product = crud.get_product(db, item.product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    if product.stock < item.quantity:
+    if product.stock - product.reserved < item.quantity:
         raise HTTPException(status_code=400, detail="Insufficient stock")
+    product.reserved += item.quantity
     db_item = models.CartItem(user_id=current_user.id, product_id=item.product_id, quantity=item.quantity)
     db.add(db_item)
     db.commit()
@@ -42,8 +43,13 @@ def update_cart_item(
     item = db.query(models.CartItem).filter(models.CartItem.id == item_id).first()
     if not item or item.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Item not found")
-    if item.product.stock < quantity:
-        raise HTTPException(status_code=400, detail="Insufficient stock")
+    diff = quantity - item.quantity
+    if diff > 0:
+        if item.product.stock - item.product.reserved < diff:
+            raise HTTPException(status_code=400, detail="Insufficient stock")
+        item.product.reserved += diff
+    elif diff < 0:
+        item.product.reserved += diff  # diff is negative
     return crud.update_cart_item_quantity(db, item, quantity)
 
 
@@ -56,5 +62,6 @@ def delete_cart_item(
     item = db.query(models.CartItem).filter(models.CartItem.id == item_id).first()
     if not item or item.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Item not found")
+    item.product.reserved -= item.quantity
     crud.delete_cart_item(db, item)
     return {"detail": "deleted"}

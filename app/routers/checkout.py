@@ -58,7 +58,7 @@ def checkout(
     db.commit()
     db.refresh(order)
 
-    # 6. Convert cart items to order items & update stock
+    # 6. Convert cart items to order items & update stock/reserved
     for ci in cart_items:
         order_item = models.OrderItem(
             order_id=order.id,
@@ -67,6 +67,7 @@ def checkout(
             price=float(ci.product.price),
         )
         ci.product.stock -= ci.quantity
+        ci.product.reserved -= ci.quantity
         db.add(order_item)
         db.delete(ci)
 
