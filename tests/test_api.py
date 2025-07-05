@@ -83,6 +83,7 @@ def test_full_flow(tokens):
         headers={"Authorization": tokens["user"]},
     )
     assert resp.status_code == 200
+    address_id = resp.json()["id"]
 
     # user submits a review
     resp = client.post(
@@ -146,9 +147,14 @@ def test_full_flow(tokens):
         headers={"Authorization": tokens["user"]},
     )
     assert resp.status_code == 200
-    resp = client.post("/orders/", headers={"Authorization": tokens["user"]})
+    resp = client.post(
+        "/orders/",
+        params={"address_id": address_id},
+        headers={"Authorization": tokens["user"]},
+    )
     assert resp.status_code == 200
     order_id = resp.json()["id"]
+    assert resp.json()["shipping_address_id"] == address_id
 
     # confirm payment
     resp = client.post(f"/payments/{order_id}")

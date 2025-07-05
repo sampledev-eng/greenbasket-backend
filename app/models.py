@@ -93,6 +93,7 @@ class Order(Base):
     __tablename__ = "orders"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+    shipping_address_id = Column(Integer, ForeignKey("addresses.id"))
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     total = Column(Float, default=0.0)
     status = Column(Enum(OrderStatus), default=OrderStatus.pending)
@@ -101,6 +102,7 @@ class Order(Base):
     items = relationship("OrderItem", back_populates="order")
     payment = relationship("Payment", back_populates="order", uselist=False)
     delivery_assignment = relationship("DeliveryAssignment", back_populates="order", uselist=False)
+    shipping_address = relationship("Address")
 
 
 class OrderItem(Base):

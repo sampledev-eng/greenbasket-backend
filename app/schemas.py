@@ -130,6 +130,7 @@ class OrderItem(BaseModel):
 
 class Order(BaseModel):
     id: int
+    shipping_address_id: int
     created_at: datetime.datetime
     total: float
     status: OrderStatus

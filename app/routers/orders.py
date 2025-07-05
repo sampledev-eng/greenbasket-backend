@@ -8,6 +8,7 @@ router = APIRouter(prefix="/orders", tags=["orders"])
 
 @router.post("/", response_model=schemas.Order)
 def place_order(
+    address_id: int,
     db: Session = Depends(dependencies.get_db),
     current_user: models.User = Depends(auth_utils.get_current_user),
 ):
@@ -15,9 +16,18 @@ def place_order(
     if not cart_items:
         raise HTTPException(status_code=400, detail="Cart is empty")
 
+    address = crud.get_address(db, address_id)
+    if not address or address.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Address not found")
+
     # Calculate total and create order
     total = sum(ci.quantity * ci.product.price for ci in cart_items)
-    order = models.Order(user_id=current_user.id, total=total, status=models.OrderStatus.pending)
+    order = models.Order(
+        user_id=current_user.id,
+        shipping_address_id=address_id,
+        total=total,
+        status=models.OrderStatus.pending,
+    )
     db.add(order)
     db.commit()
     db.refresh(order)
