@@ -2,13 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import uuid
 
-from .. import schemas, models, dependencies, auth as auth_utils
+from .. import schemas, models, dependencies, auth as auth_utils, crud
 
 router = APIRouter(tags=["checkout"])
 
 
 @router.post("/checkout", response_model=schemas.Payment)
 def checkout(
+    address_id: int,
     db: Session = Depends(dependencies.get_db),
     current_user: models.User = Depends(auth_utils.get_current_user),
 ):
@@ -18,8 +19,17 @@ def checkout(
     if not cart_items:
         raise HTTPException(status_code=400, detail="Cart is empty")
 
+    address = crud.get_address(db, address_id)
+    if not address or address.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Address not found")
+
     total = sum(ci.quantity * float(ci.product.price) for ci in cart_items)
-    order = models.Order(user_id=current_user.id, total=total, status=models.OrderStatus.paid)
+    order = models.Order(
+        user_id=current_user.id,
+        shipping_address_id=address_id,
+        total=total,
+        status=models.OrderStatus.paid,
+    )
     db.add(order)
     db.commit()
     db.refresh(order)
