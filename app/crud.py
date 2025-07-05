@@ -33,6 +33,21 @@ def get_or_create_category(db: Session, name: str):
     db.refresh(category)
     return category
 
+
+def update_category(db: Session, category: models.Category, data: schemas.CategoryBase) -> models.Category:
+    """Update a category with the provided data."""
+    for field, value in data.dict().items():
+        setattr(category, field, value)
+    db.commit()
+    db.refresh(category)
+    return category
+
+
+def delete_category(db: Session, category: models.Category) -> None:
+    """Delete a category object."""
+    db.delete(category)
+    db.commit()
+
 # Product CRUD
 def create_product(db: Session, product: schemas.ProductCreate):
     db_product = models.Product(**product.dict())
