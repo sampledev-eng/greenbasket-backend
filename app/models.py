@@ -1,4 +1,5 @@
-import enum, datetime
+import enum
+import datetime
 from sqlalchemy import (
     Column,
     Integer,
@@ -11,10 +12,10 @@ from sqlalchemy import (
     Numeric,
 )
 from sqlalchemy.orm import relationship
-
 from .database import Base
 
-# Enums
+
+# ─── Enums ───────────────────────────────────────────────
 class OrderStatus(str, enum.Enum):
     pending = "pending"
     paid = "paid"
@@ -23,13 +24,14 @@ class OrderStatus(str, enum.Enum):
     delivered = "delivered"
     cancelled = "cancelled"
 
+
 class PaymentStatus(str, enum.Enum):
     pending = "pending"
     confirmed = "confirmed"
     failed = "failed"
 
 
-# Core models
+# ─── Core Models ─────────────────────────────────────────
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
@@ -56,12 +58,12 @@ class Product(Base):
     __tablename__ = "products"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
-    description = Column(String, nullable=True)
+    description = Column(String)
     brand = Column(String)
     mrp = Column(Numeric(10, 2))
     price = Column(Numeric(10, 2), nullable=False)
     discount_pct = Column(Integer, default=0)
-    image_url = Column(String, nullable=True)
+    image_url = Column(String)
     stock = Column(Integer, default=0)
     category_id = Column(Integer, ForeignKey("categories.id"))
 
@@ -96,13 +98,13 @@ class Order(Base):
     shipping_address_id = Column(Integer, ForeignKey("addresses.id"))
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     total = Column(Float, default=0.0)
+    coupon_id = Column(Integer, ForeignKey("coupons.id"), nullable=True)
     status = Column(Enum(OrderStatus), default=OrderStatus.pending)
 
     user = relationship("User", back_populates="orders")
     items = relationship("OrderItem", back_populates="order")
     payment = relationship("Payment", back_populates="order", uselist=False)
     delivery_assignment = relationship("DeliveryAssignment", back_populates="order", uselist=False)
-    shipping_address = relationship("Address")
 
 
 class OrderItem(Base):
@@ -121,7 +123,7 @@ class Payment(Base):
     __tablename__ = "payments"
     id = Column(Integer, primary_key=True, index=True)
     order_id = Column(Integer, ForeignKey("orders.id"))
-    provider_payment_id = Column(String, nullable=True)  # e.g., Stripe paymentIntent id
+    provider_payment_id = Column(String)
     amount = Column(Float, nullable=False)
     status = Column(Enum(PaymentStatus), default=PaymentStatus.pending)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
@@ -141,7 +143,7 @@ class DeliveryAssignment(Base):
     delivery_partner = relationship("User", back_populates="deliveries")
 
 
-# Additional models for extended BigBasket-style features
+# ─── Extensions ─────────────────────────────────────────
 class Address(Base):
     __tablename__ = "addresses"
     id = Column(Integer, primary_key=True, index=True)
@@ -149,7 +151,7 @@ class Address(Base):
     address_line = Column(String, nullable=False)
     city = Column(String, nullable=False)
     pincode = Column(String, nullable=False)
-    label = Column(String, nullable=True)
+    label = Column(String)
     is_default = Column(Boolean, default=False)
 
     user = relationship("User")
@@ -161,7 +163,7 @@ class Review(Base):
     product_id = Column(Integer, ForeignKey("products.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
     rating = Column(Integer, nullable=False)
-    comment = Column(String, nullable=True)
+    comment = Column(String)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     product = relationship("Product")
@@ -181,7 +183,7 @@ class WalletTransaction(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     amount = Column(Float, nullable=False)
-    description = Column(String, nullable=True)
+    description = Column(String)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("User")
