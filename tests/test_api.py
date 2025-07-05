@@ -119,6 +119,26 @@ def test_full_flow(tokens):
     assert resp.status_code == 200
     assert resp.json()["serviceable"] is True
 
+    # cart item operations
+    resp = client.post(
+        "/cart/",
+        json={"product_id": product_id, "quantity": 2},
+        headers={"Authorization": tokens["user"]},
+    )
+    assert resp.status_code == 200
+    item_id = resp.json()["id"]
+
+    resp = client.put(
+        f"/cart/{item_id}",
+        json=3,
+        headers={"Authorization": tokens["user"]},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["quantity"] == 3
+
+    resp = client.delete(f"/cart/{item_id}", headers={"Authorization": tokens["user"]})
+    assert resp.status_code == 200
+
     # user places an order
     resp = client.post(
         "/cart/",

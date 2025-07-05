@@ -158,6 +158,21 @@ def create_notification(db: Session, user_id: int, message: str):
     return notif
 
 
+# ---- Cart helpers ----
+def update_cart_item_quantity(
+    db: Session, item: models.CartItem, quantity: int
+) -> models.CartItem:
+    item.quantity = quantity
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+def delete_cart_item(db: Session, item: models.CartItem) -> None:
+    db.delete(item)
+    db.commit()
+
+
 # ---- Wishlist helpers ----
 def add_to_wishlist(db: Session, user_id: int, product_id: int) -> models.WishlistItem:
     item = (

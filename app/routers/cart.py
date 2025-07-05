@@ -30,3 +30,31 @@ def get_cart(
     db: Session = Depends(dependencies.get_db),
 ):
     return db.query(models.CartItem).filter(models.CartItem.user_id == current_user.id).all()
+
+
+@router.put("/{item_id}", response_model=schemas.CartItem)
+def update_cart_item(
+    item_id: int,
+    quantity: int,
+    current_user: models.User = Depends(auth_utils.get_current_user),
+    db: Session = Depends(dependencies.get_db),
+):
+    item = db.query(models.CartItem).filter(models.CartItem.id == item_id).first()
+    if not item or item.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Item not found")
+    if item.product.stock < quantity:
+        raise HTTPException(status_code=400, detail="Insufficient stock")
+    return crud.update_cart_item_quantity(db, item, quantity)
+
+
+@router.delete("/{item_id}")
+def delete_cart_item(
+    item_id: int,
+    current_user: models.User = Depends(auth_utils.get_current_user),
+    db: Session = Depends(dependencies.get_db),
+):
+    item = db.query(models.CartItem).filter(models.CartItem.id == item_id).first()
+    if not item or item.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Item not found")
+    crud.delete_cart_item(db, item)
+    return {"detail": "deleted"}
