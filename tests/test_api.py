@@ -150,6 +150,15 @@ def test_full_flow(tokens):
     assert resp.status_code == 200
     order_id = resp.json()["id"]
 
+    # fetch the order as the user
+    resp = client.get(f"/orders/{order_id}", headers={"Authorization": tokens["user"]})
+    assert resp.status_code == 200
+    assert resp.json()["id"] == order_id
+
+    # admin can access the order
+    resp = client.get(f"/orders/{order_id}", headers={"Authorization": tokens["admin"]})
+    assert resp.status_code == 200
+
     # confirm payment
     resp = client.post(f"/payments/{order_id}")
     assert resp.status_code == 200

@@ -50,3 +50,17 @@ def list_orders(
 @router.get("/all", response_model=list[schemas.Order], dependencies=[Depends(dependencies.admin_required)])
 def list_all_orders(db: Session = Depends(dependencies.get_db)):
     return db.query(models.Order).all()
+
+
+@router.get("/{order_id}", response_model=schemas.Order)
+def get_order(
+    order_id: int,
+    db: Session = Depends(dependencies.get_db),
+    current_user: models.User = Depends(auth_utils.get_current_user),
+):
+    order = db.query(models.Order).filter(models.Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.user_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not allowed")
+    return order
